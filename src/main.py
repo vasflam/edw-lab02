@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from pprint import pprint
+import asyncio
 import pickle
 
 from .const import CSE_ID, DEVELOPER_KEY, DEV_MODE, NGRAM_SIZE
@@ -18,47 +19,43 @@ def index():
 
 @app.route('/search', methods=['POST'])
 def app_search():
-    try:
-        text = request.json['text']
-        model = create_model(text, NGRAM_SIZE)
-        response = search(text)
-        items = list(filter(lambda item: 'fileFormat' not in item, response['items']))
-        results = []
-        for item in items:
+    async def process_entry(item):
+        try:
             text = get_url_text(cache, **item)
             score = get_avg_score(model, text, NGRAM_SIZE)
-            results.append({
+            result = {
                 'site': item['displayLink'],
                 'link': item['link'],
                 'title': item['title'],
-                'score': score,
-            })
+                'score': score*100,
+            }
+            return result
+        except:
+            print('Failed to fetch data or calculate score from: ', item['link'])
+            return None
 
-        return jsonify({
-            'status': 200,
-            'results': results,
-            'response': response,
-        })
-    except Exception as e:
-        pprint(e)
-        return jsonify({
-            'status': 400,
-            'error': e,
-        })
+    text = request.json['text']
+    model = create_model(text, NGRAM_SIZE)
+    responses = search(text)
+    items = []
+    batches = []
+    for response in responses:
+        batches.extend(list(filter(lambda item: 'fileFormat' not in item, response['items'])))
 
-"""
-def main():
-    cache = Cache()
-    model = create_model(SEARCH_TEXT, NGRAM_SIZE)
-    response = search(SEARCH_TEXT)
-    for item in response["items"]:
-        # dict_keys(['kind', 'title', 'htmlTitle', 'link', 'displayLink', 'snippet', 'htmlSnippet', 'cacheId', 'formattedUrl', 'htmlFormattedUrl', 'pagemap'])
-        text = get_url_text(cache, **item)
-        score1 = get_score(model, text, NGRAM_SIZE)
-        m1 = numpy.average(score1, weights=score1)
-        pprint(m1)
-    cache.close()
+    loop = asyncio.new_event_loop()
+    while len(batches) > 0:
+        batch = batches[0:5]
+        del batches[0:5]
+        tasks = []
+        for item in batch:
+            tasks.append(loop.create_task(process_entry(item)))
+        items.extend(loop.run_until_complete(asyncio.gather(*tasks)))
+    loop.close()
 
-if __name__ == "__main__":
-    main()
-"""
+    items = list(filter(lambda item: item is not None, items))
+
+    return jsonify({
+        'status': 200,
+        'items': items,
+    })
+

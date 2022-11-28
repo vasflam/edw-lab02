@@ -12,26 +12,42 @@ from pprint import pprint
 from .cache import Cache
 from .const import DEV_MODE, DEVELOPER_KEY, CSE_ID
 
-def search(query: str):
-    if DEV_MODE:
-        with open("response.p", "rb") as fp:
-            return pickle.load(fp)
-
-    service = build("customsearch", "v1", developerKey=DEVELOPER_KEY)
-    response = (
+def search_query(service, params):
+    return (
         service.cse()
-        .list(
-            q=query,
-            filter=0,
-            cx=CSE_ID
-        )
+        .list(**params)
         .execute()
     )
 
-    with open("response.p", "wb") as fp:
-        pickle.dump(response, fp)
+def search(query: str, max_pages = 2):
+    response = ""
+    page = 1
+    service = build("customsearch", "v1", developerKey=DEVELOPER_KEY)
+    search_args = {
+        'q': query,
+        'filter': 1,
+        'cx': CSE_ID
+    }
+    if DEV_MODE:
+        with open("response.p", "rb") as fp:
+            responses = pickle.load(fp)
+            response = responses[0]
+            return responses
+    else:
+        response = search_query(service, search_args)
 
-    return response
+    responses = [response]
+    while 'nextPage' in response['queries'] and page <= max_pages:
+        nextPage = response['queries']['nextPage'][0]
+        search_args['start'] = nextPage['startIndex']
+        response = search_query(service, search_args)
+        responses.append(response)
+        page += 1
+
+    with open("response.p", "wb") as fp:
+        pickle.dump(responses, fp)
+
+    return responses
 
 def cleanup_text(text):
     text = text.lower()
@@ -57,12 +73,6 @@ def get_url_text(cache: Cache, link: str, **kwargs) -> str:
         text = article.get_text()
     else:
         text = soup.get_text()
-
-    #n = 10
-    #tokens = tokenize_text(text, n)
-    #grams = generate_grams(tokens, n)
-    #freq = nltk.FreqDist(grams).most_common()
-    #pprint(freq[0:30])
 
     return text
 
