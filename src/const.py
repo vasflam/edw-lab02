@@ -1,6 +1,6 @@
 from typing import Final
 
-DEV_MODE: Final = True
+DEV_MODE: Final = False
 CSE_ID: Final = "b5931d4fadbda4c79"
 DEVELOPER_KEY: Final = "AIzaSyDVOrf2vHemabLrlz_juto5vssZfpOhp9E"
 NGRAM_SIZE: Final = 4

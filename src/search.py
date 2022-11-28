@@ -9,7 +9,7 @@ from nltk.util import ngrams, everygrams, pad_sequence
 from nltk.tokenize import word_tokenize
 from nltk.lm import MLE, WittenBellInterpolated
 from pprint import pprint
-from .cache import Cache
+#from .cache import Cache
 from .const import DEV_MODE, DEVELOPER_KEY, CSE_ID
 
 def search_query(service, params):
@@ -60,12 +60,9 @@ def cleanup_text(text):
     text = ' '.join(sentences)
     return text
 
-def get_url_text(cache: Cache, link: str, **kwargs) -> str:
-    html = cache.get(link)
-    if html is None:
-        r = requests.get(link)
-        html = r.text
-        cache.set(link, html)
+def get_url_text(link: str, **kwargs) -> str:
+    r = requests.get(link)
+    html = r.text
     soup = BeautifulSoup(html, features="html.parser")
     for tag in soup(["script", "style", "iframe", "img", "path", "a"]):
         tag.extract()

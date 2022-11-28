@@ -4,14 +4,14 @@ import asyncio
 import pickle
 
 from .const import CSE_ID, DEVELOPER_KEY, DEV_MODE, NGRAM_SIZE
-from .cache import Cache
+#from .cache import Cache
 from .search import search, get_url_text, create_model, tokenize_text, get_avg_score
 
 app = Flask(__name__,
             static_url_path='',
             static_folder='web/static',
             template_folder='web/templates')
-cache = Cache()
+#cache = Cache()
 
 @app.route("/")
 def index():
@@ -21,7 +21,7 @@ def index():
 def app_search():
     async def process_entry(item):
         try:
-            text = get_url_text(cache, **item)
+            text = get_url_text(**item)
             score = get_avg_score(model, text, NGRAM_SIZE)
             result = {
                 'site': item['displayLink'],
