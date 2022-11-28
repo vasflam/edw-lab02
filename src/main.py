@@ -34,7 +34,7 @@ def app_search():
             print('Failed to fetch data or calculate score from: ', item['link'])
             return None
 
-    text = request.json['text']
+    text = str(request.json['text']).strip()
     model = create_model(text, NGRAM_SIZE)
     responses = search(text)
     items = []

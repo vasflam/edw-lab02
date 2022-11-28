@@ -26,7 +26,8 @@ def search(query: str, max_pages = 2):
     search_args = {
         'q': query,
         'filter': 1,
-        'cx': CSE_ID
+        'cx': CSE_ID,
+        'safe': 'active',
     }
     if DEV_MODE:
         with open("response.p", "rb") as fp:
@@ -37,7 +38,7 @@ def search(query: str, max_pages = 2):
         response = search_query(service, search_args)
 
     responses = [response]
-    while 'nextPage' in response['queries'] and page <= max_pages:
+    while 'nextPage' in response['queries'] and page < max_pages:
         nextPage = response['queries']['nextPage'][0]
         search_args['start'] = nextPage['startIndex']
         response = search_query(service, search_args)
@@ -81,7 +82,7 @@ def tokenize_text(text, n):
     tokens = list(pad_sequence(word_tokenize(text), n, pad_left=True, left_pad_symbol = "<s>"))
     filter_words = ['.', '``', '\'\'', '""', '-', ')', '(', ':', ' ', '', '...']
     tokens = list(filter(lambda word: word not in filter_words, tokens))
-    tokens = list(filter(lambda word: len(word) > 2, tokens))
+    tokens = list(filter(lambda word: len(word) > 1, tokens))
     return tokens
 
 def generate_grams(tokenized_text, n):

@@ -67,7 +67,7 @@ function ResultTable({ rows, minimalScore }) {
             <td>{item.site}</td>
             <td>{item.link}</td>
             <td>{item.title}</td>
-            <td>{item.score}</td>
+            <td>{item.score.toFixed(2) || 0}</td>
           </tr>)
         })}
       </tbody>
@@ -87,6 +87,7 @@ function App() {
 
   const handleClick = () => {
     setText('');
+    setRows([]);
   };
 
   const updateRows = (rows) => {
